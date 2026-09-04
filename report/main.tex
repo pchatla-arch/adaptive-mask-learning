@@ -1,0 +1,499 @@
+\documentclass[10pt,letterpaper]{article}
+
+% ---------------------------------------------------------------------------
+% Adaptive Mask Learning for MaskedMimic via Meta-RL
+% Stanford CS224R (Spring 2025) final report -- corrected version.
+%
+% Figures: drop the image files listed in figures/README.md into figures/.
+% Any figure that is missing compiles as a labelled placeholder box so the
+% document always builds.
+% ---------------------------------------------------------------------------
+
+\usepackage[margin=1in]{geometry}
+\usepackage{mathptmx}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs}
+\usepackage{graphicx}
+\usepackage{caption}
+\usepackage{enumitem}
+\usepackage{fancyhdr}
+\usepackage{xcolor}
+\usepackage{url}
+\usepackage[numbers,sort&compress]{natbib}
+\usepackage[colorlinks=true,linkcolor=blue!60!black,citecolor=blue!60!black,urlcolor=blue!60!black]{hyperref}
+
+\setlist{nosep,leftmargin=*}
+\captionsetup{font=small,labelfont=bf}
+\graphicspath{{figures/}}
+
+\pagestyle{fancy}
+\fancyhf{}
+\fancyfoot[C]{\thepage}
+\fancyhead[L]{\small Stanford CS224R 2025 Final Report}
+\renewcommand{\headrulewidth}{0pt}
+
+% Figure helper: renders the image if present, otherwise a placeholder box.
+\newcommand{\figimg}[2]{%
+  \IfFileExists{figures/#1}{\includegraphics[width=#2]{#1}}{%
+    \fbox{\parbox[c][3.2cm][c]{0.85\linewidth}{\centering\small\texttt{\detokenize{figures/#1}}\par\vspace{2pt}(figure file not yet added)\par}}}}
+
+\newcommand{\pfc}{\pi_{\mathrm{FC}}}
+\newcommand{\ppc}{\pi_{\mathrm{PC}}}
+\newcommand{\pth}{\pi_{\theta}}
+
+\title{Adaptive Mask Learning for MaskedMimic via Meta-RL}
+\author{Prasuna Chatla\\
+Department of Computer Science\\
+Stanford University\\
+\texttt{pchatla@stanford.edu}}
+\date{}
+
+\begin{document}
+
+% ===========================================================================
+\section*{Extended Abstract}
+% ===========================================================================
+
+\paragraph{Motivation}
+Transformer-based motion inpainting models such as MaskedMimic~\cite{tessler2024maskedmimic} enable flexible character control across diverse input modalities (joint tracking, object interaction, and language). During training, however, they rely on a masking schedule that is fixed in advance or sampled at random, and that does not respond to how far the model has progressed. This limits training efficiency, robustness to sparse inputs, and generalization to unfamiliar conditioning. We ask whether the masking schedule itself can be learned, turning it from fixed noise into a trainable signal that evolves with training.
+
+\paragraph{Method}
+We develop \emph{Adaptive Mask Learning} (AML), a meta-reinforcement-learning framework that learns a dynamic masking policy. A policy network $\pth$ predicts the masking ratio $\rho \in [0.1, 0.9]$ during training, conditioned on real-time training feedback: the change in validation loss, the gradient norm, and the entropy of the sampled mask. The policy is optimized with Proximal Policy Optimization (PPO)~\cite{schulman2017ppo} to maximize downstream performance improvements, so the inpainting model receives a self-regulating curriculum aligned with its own learning dynamics.
+
+\paragraph{Implementation}
+The system has three components: a fully constrained tracking controller $\pfc$ that follows full-body reference motion from AMASS~\cite{mahmood2019amass}; a partially constrained inpainting controller $\ppc$ trained with DAgger~\cite{ross2011dagger} on masked input sequences; and the adaptive masking scheduler $\pth$, a two-layer MLP (128 hidden units) trained with PPO on a reward derived from validation-loss improvement and imitation accuracy. Training ran for 2~million environment steps across 128 parallel IsaacGym~\cite{makoviychuk2021isaacgym} environments on a single NVIDIA A100 GPU. Performance was validated every 10{,}000 steps (mean squared error, imitation accuracy, joint-velocity smoothness, mask entropy, and the number of steps for $\rho$ to reach 95\% of its final mean). Generalization was tested on a held-out cartwheel motion and on text prompts from HumanML3D~\cite{guo2022humanml3d}.
+
+\paragraph{Results}
+On AMASS, relative to a cosine masking schedule, AML reduces MPJPE from 42.7 to 29.6 ($-31\%$), reduces FID from 23.1 to 12.4 ($-46\%$), raises action-classification accuracy from 80.5\% to 92.1\% ($+11.6$ points), and cuts foot-slip error from 10.3\% to 3.2\%. The learned schedule rises from $\rho \approx 0.2$ early in training to $\rho \approx 0.68$ at convergence, an emergent easy-to-hard curriculum. An ablation shows that the validation-loss delta is the most important scheduler input. The model also produces coherent full-body motion on the held-out cartwheel sequence and on unseen HumanML3D text prompts.
+
+\paragraph{Discussion}
+Masking schedules can be optimized jointly with the main model rather than designed statically. Treating masking as a learned policy improves convergence speed, robustness to input sparsity, and generalization to unseen conditioning. The PPO-based scheduler adds training overhead and is sensitive to reward design, and sparse evaluation signals in text- and object-conditioned tasks remain a challenge.
+
+\paragraph{Conclusion}
+We implemented and evaluated Adaptive Mask Learning as a curriculum-style masking strategy for transformer-based character control through motion inpainting. The learned masking policy provides dynamic data scheduling that improves training efficiency and generalization. The approach is modular and compatible with existing motion frameworks.
+
+\newpage
+\maketitle
+\thispagestyle{fancy}
+
+\begin{abstract}
+Transformer-based motion inpainting has emerged as a powerful method for recovering missing or corrupted motion sequences in character control tasks. Most current approaches, including MaskedMimic, rely on fixed or randomly sampled masking schedules that are agnostic to training dynamics, which leads to inefficient learning and brittle generalization under sparse or adversarial corruption. We propose a dynamic masking framework in which a meta-reinforcement-learning policy learns to predict the masking ratio $\rho$ at each training step. The policy is trained with Proximal Policy Optimization (PPO) and guided by validation-loss deltas and downstream task metrics such as Fr\'echet Inception Distance (FID) and action accuracy. We integrate this adaptive masking strategy into the MaskedMimic framework and show that it improves convergence speed, reconstruction fidelity, and robustness across input modalities including joint subsets, object interaction, and text cues. On AMASS the learned schedule outperforms cosine and random baselines on every metric we track, and it generalizes to a held-out motion and to unseen HumanML3D text prompts, suggesting that learned corruption is a useful meta-learning tool.
+\end{abstract}
+
+% ===========================================================================
+\section{Introduction}
+% ===========================================================================
+
+Designing intelligent, physics-based virtual characters capable of adapting to complex, user-defined instructions and scene conditions is a foundational challenge in computer graphics, embodied AI, and robotics. It spans applications such as virtual reality, animation, interactive digital humans, and general-purpose agents. Consider instructing a character to:
+\begin{quote}
+\emph{``Walk up the slope to the balcony, wave to the drone, sit on the nearest bench, then balance on one foot.''}
+\end{quote}
+Such behaviors demand seamless coordination across locomotion, object interaction, and text-grounded control, all under diverse environmental and input constraints.
+
+Prior work in physics-based control has made remarkable progress through specialized systems trained for narrow tasks: VR tracking from sparse sensors~\cite{winkler2022questsim}, trajectory-following pedestrian control~\cite{rempe2023trace}, character--scene interaction~\cite{hassan2023interphys}, and language-directed control~\cite{juravsky2022padl}. These methods often rely on handcrafted reward functions and require training dedicated controllers per task, which limits extensibility. Attempts to generalize have used skill-conditioned or latent-variable models~\cite{peng2022ase,luo2024pulse}, but these systems still depend on fixed assumptions about data structure or goal representation.
+
+MaskedMimic~\cite{tessler2024maskedmimic} addresses these limitations by casting character control as a masked motion inpainting problem. Instead of hard-coded tasks or latent codes, MaskedMimic learns to synthesize full-body motion from partially masked sequences of keyframes, joint subsets, text descriptions, or object conditions. By training a transformer on such masked data, it serves as a unified control interface that generalizes across modalities and tasks without explicit reward design.
+
+While MaskedMimic generalizes across input conditions, its reliance on a static or random masking schedule is a limitation: the masking strategy is fixed throughout training, irrespective of the model's learning phase or task difficulty. Early-stage training may be hindered by overly sparse inputs, while late-stage training may under-challenge the model, limiting generalization and efficiency. This raises the question: \emph{can we learn the masking schedule itself, tailoring input corruption dynamically to the model's own learning state?}
+
+We introduce \textbf{Adaptive Mask Learning}, which augments MaskedMimic with a masking scheduler trained via meta-reinforcement learning. A policy network predicts the masking ratio $\rho$ at each step from real-time training signals (validation-loss improvement, gradient magnitude, and mask entropy). Using PPO~\cite{schulman2017ppo}, the policy is rewarded for improving model learning and downstream performance. This turns static data corruption into a learnable curriculum~\cite{bengio2009curriculum}.
+
+Our contributions are:
+\begin{itemize}
+  \item \textbf{Adaptive Mask Learning}, a reinforcement-learned scheduler that predicts the masking ratio dynamically during training, replacing fixed masking heuristics in MaskedMimic.
+  \item A meta-RL formulation in which a PPO policy observes training progress (validation-loss delta, gradient norm, mask entropy) and is rewarded on a combination of reconstruction-loss improvement and downstream imitation accuracy.
+  \item An augmented MaskedMimic training pipeline, and an empirical study on AMASS showing improved convergence, reconstruction quality, and robustness under high sparsity relative to random and cosine schedules, with an ablation over scheduler inputs.
+  \item Generalization tests on a held-out cartwheel motion and on unseen HumanML3D text prompts.
+\end{itemize}
+
+% ===========================================================================
+\section{Related Work}
+% ===========================================================================
+
+\paragraph{Physics-based character animation}
+Physics-based character animation has traditionally relied on manually crafted, task-specific controllers~\cite{delasa2010feature,geijtenbeek2013flexible,lee2002interactive,liu2010sampling}. These controllers often yield impressive results but require significant engineering effort and lack generality across tasks. More recent approaches learn controllers that are scene-aware, capable of trajectory following~\cite{rempe2023trace} and object interaction~\cite{hassan2023interphys}. MaskedMimic~\cite{tessler2024maskedmimic} unified this trend with a transformer-based motion inpainting system trained on partial inputs (joints, text, object cues). It supports flexible modalities and task composition but uses a static masking strategy during training. Our work replaces that static corruption schedule with a learned masking policy, so that input sparsity tracks the model's evolving capacity.
+
+\paragraph{Human--object interaction}
+Human--object interaction (HOI) systems must respect physical constraints such as contact and collision. Kinematic models~\cite{wang2021synthesizing,xu2023interdiff} handle visual realism but can produce artifacts such as floating or penetration. Physics-based HOI systems, including PhysHOI~\cite{wang2023physhoi}, InterPhys~\cite{hassan2023interphys}, and UniHSI~\cite{xiao2024unihsi}, enforce physical consistency through simulation. MaskedMimic synthesizes interactions via inpainting without direct reward engineering. Adaptive Mask Learning complements this by shaping the training distribution: it decides how much of the input to observe or corrupt over time, which makes inpainting more robust when object cues are masked.
+
+\paragraph{Text-to-motion synthesis}
+Text-conditioned motion generation has been enabled by datasets such as BABEL~\cite{punnakkal2021babel} and HumanML3D~\cite{guo2022humanml3d}. Systems such as ACTOR~\cite{petrovich2021actor} and MDM~\cite{tevet2023mdm} use transformer- or diffusion-based kinematic models, but may violate physical realism. PACER+~\cite{wang2024pacerplus} merges kinematic text modeling with physical controllers. MaskedMimic incorporates text as a control modality via inpainting; Adaptive Mask Learning exposes the model to varied sparsity patterns during training, improving robustness to partial language constraints.
+
+\paragraph{Latent behavior models}
+Latent generative models such as ASE~\cite{peng2022ase}, CALM~\cite{tessler2023calm}, and C$\cdot$ASE~\cite{dou2023case} learn skill manifolds that are mapped to behaviors through hierarchical controllers. These systems scale across tasks but rely on latent control codes that can be hard to interpret. MaskedMimic replaces latent control with direct inpainting from explicit partial constraints. Adaptive Mask Learning improves this control interface by learning how much to mask and when, preserving training efficiency and generality without hierarchical planning.
+
+\paragraph{Relation to MaskedMimic's structured masking}
+MaskedMimic's masking is structured: it masks per joint, per frame, and per modality. Our scheduler controls a single scalar $\rho$ that sets the expected fraction of conditioning that is masked at each step; the structured pattern within that budget is sampled as in MaskedMimic. This is a deliberate simplification. It keeps the policy's action space one-dimensional and makes PPO training stable at course-project scale, at the cost of not learning \emph{which} joints, frames, or modalities to mask. Extending the policy to structured masks is discussed in Section~\ref{sec:conclusion}.
+
+% ===========================================================================
+\section{Method}
+% ===========================================================================
+
+Our framework extends the MaskedMimic architecture~\cite{tessler2024maskedmimic}, as implemented in ProtoMotions~\cite{protomotions}, with an adaptive masking scheduler trained via meta-reinforcement learning. The system has three components: (1)~a fully constrained controller $\pfc$ trained with goal-conditioned reinforcement learning, (2)~a partially constrained inpainting controller $\ppc$ trained through behavioral cloning, and (3)~a masking policy $\pth$ that adjusts the masking ratio $\rho$ during training. Figure~\ref{fig:pipeline} shows the pipeline.
+
+\begin{figure}[htbp]
+  \centering
+  \figimg{fig1_pipeline.png}{0.9\linewidth}
+  \caption{Adaptive Mask Learning pipeline.}
+  \label{fig:pipeline}
+\end{figure}
+
+\subsection{Stage 1: Fully Constrained Controller ($\pfc$)}
+
+We first obtain a motion-tracking controller $\pfc$ trained with PPO to imitate full-body reference motion from AMASS. At timestep $t$ the agent observes the state $s_t$ (3D joint positions and velocities, canonicalized relative to the root) and a goal $g^{\mathrm{full}}_t$ (full-body target poses over $K$ future steps). Actions $a_t \sim \pi(a_t \mid s_t, g^{\mathrm{full}}_t)$ are sampled from a Gaussian policy with fixed diagonal covariance $\sigma_\pi = \exp(-2.9)$. The objective is the expected discounted return
+\begin{equation}
+  J = \mathbb{E}_{\tau \sim p(\tau \mid \pi)} \Big[ \sum_{t=0}^{T} \gamma^t r_t \Big],
+\end{equation}
+where $r_t$ combines weighted penalties on joint-position error, rotation error, root height, velocity mismatch, and energy:
+\begin{equation}
+  r_t = w_{gp} r_{gp} + w_{gr} r_{gr} + w_{rh} r_{rh} + w_{vel} r_{vel} + w_{eg} r_{eg}.
+\end{equation}
+Training uses a composite simulation environment with flat terrain, irregular terrain, and object-interaction zones, early termination for high-error episodes, and prioritized sampling of difficult motions.
+
+\subsection{Stage 2: Partially Constrained Inpainting Controller ($\ppc$)}
+
+The distilled policy $\ppc$ learns to generate full-body motion from partial input using DAgger~\cite{ross2011dagger}. During training a masking function $M$ is applied to the full goal to produce
+\begin{equation}
+  g^{\mathrm{partial}}_t = M(g^{\mathrm{full}}_t),
+\end{equation}
+mimicking real-world sparsity such as VR tracking or object contact. The transformer-based model (6 layers, 8 attention heads) receives the masked input and predicts future joint poses, which are reconstructed into actions through physics simulation.
+
+\subsection{Stage 3: Adaptive Mask Learning ($\pth$)}
+
+To improve over fixed or randomly sampled masking schedules, we introduce a learned masking policy $\pth$, trained with PPO, that outputs a masking ratio $\rho_t \in [0.1, 0.9]$.
+
+\paragraph{Policy architecture}
+$\pth$ is a two-layer MLP with 128 hidden units. Its input is a training-state vector containing the change in validation loss since the previous evaluation, the entropy of the current mask distribution, and the gradient norm of the last $\ppc$ update. It outputs the parameters of a Beta distribution, $\rho \sim \mathrm{Beta}(\alpha, \beta)$, whose sample is affinely mapped to $[0.1, 0.9]$. Figure~\ref{fig:architecture} shows the full architecture.
+
+\begin{figure}[htbp]
+  \centering
+  \figimg{fig2_architecture.png}{0.9\linewidth}
+  \caption{Adaptive Mask Learning architecture.}
+  \label{fig:architecture}
+\end{figure}
+
+\paragraph{Reward function}
+The masking policy receives a scalar reward at each step:
+\begin{equation}
+  R_t = \alpha \cdot \big(\mathrm{ValLoss}_{t-1} - \mathrm{ValLoss}_t\big) + \beta \cdot \mathrm{TaskMetric}_t ,
+  \label{eq:reward}
+\end{equation}
+with $\alpha = 1.0$ and $\beta = 0.5$, where $\mathrm{TaskMetric}_t$ is the imitation accuracy of $\ppc$ on the validation set. Rewards are smoothed with an exponential moving average.
+
+\paragraph{Training loop}
+The adaptive inpainting loop proceeds as follows:
+\begin{enumerate}
+  \item Observe the training state ($\Delta$ validation loss, mask entropy, gradient norm).
+  \item Sample the masking ratio $\rho_t$ from $\pth$.
+  \item Apply $M_{\rho_t}(g^{\mathrm{full}}_t)$ to create the masked input.
+  \item Train $\ppc$ on the masked data.
+  \item Compute the reward $R_t$ (Eq.~\ref{eq:reward}).
+  \item Update $\pth$ with PPO.
+\end{enumerate}
+This produces a dynamic corruption curriculum: low $\rho$ early in training and higher $\rho$ as the model becomes more robust.
+
+\subsection{Inference Behavior}
+
+At inference, $\ppc$ receives partial observations (head-and-hands input, object target positions, or text prompts) and synthesizes full-body motion. $\pth$ is used only during training; no PPO updates occur at test time.
+
+\subsection{Architectural Summary}
+
+Table~\ref{tab:arch} contrasts the two systems. Stage~1 produces the reference tracker, Stage~2 distills it into the inpainting controller under masked input, and Stage~3 wraps Stage~2 in the learned masking curriculum. The scheduler ensures that $\ppc$ is consistently exposed to input conditions aligned with its learning stage.
+
+\begin{table}[h]
+  \centering
+  \small
+  \caption{Architectural comparison of MaskedMimic and Adaptive Mask Learning.}
+  \label{tab:arch}
+  \begin{tabular}{lll}
+    \toprule
+    Component & MaskedMimic & Adaptive Mask Learning \\
+    \midrule
+    Masking schedule & Random / cosine & Meta-RL (PPO-trained) \\
+    Input coverage & Static mask ratio & Dynamic curriculum via $\rho_t$ \\
+    Training signal & DAgger & DAgger + PPO reward on validation metrics \\
+    Masking control & Predefined & Learned from validation feedback \\
+    Mask granularity & Structured (joint / frame / modality) & Scalar $\rho$ over structured sampler \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+% ===========================================================================
+\section{Experimental Setup}
+% ===========================================================================
+
+\paragraph{Framework and baseline}
+All experiments use the ProtoMotions framework~\cite{protomotions}, the reference implementation of MaskedMimic~\cite{tessler2024maskedmimic}. Our approach adds the masking policy $\pth$, trained with PPO to adjust $\rho$ throughout training. The implementation touches approximately 400 lines across the modified files (Appendix~\ref{app:impl}).
+
+\paragraph{Data preparation}
+We use AMASS~\cite{mahmood2019amass} for training and evaluation. Motion sequences are segmented into 120-frame clips (about 4~s at 30~Hz) and split 80\%/10\%/10\% into train/validation/test. Text-conditioned generalization is evaluated with HumanML3D~\cite{guo2022humanml3d} prompts, and object-scene robustness with SAMP~\cite{hassan2021samp}.
+
+\paragraph{Hardware and simulation}
+All models are trained in NVIDIA IsaacGym~\cite{makoviychuk2021isaacgym} with 128 parallel simulation environments. The character is the SMPL-based humanoid~\cite{loper2015smpl} used by ProtoMotions. Physics runs at 120~Hz with a 30~Hz control frequency. All experiments were run on a single NVIDIA A100 GPU.
+
+\paragraph{Training protocol}
+Training used a total budget of 2~million environment steps. The fully constrained tracker $\pfc$ was initialized from the pretrained full-body tracking checkpoint distributed with ProtoMotions rather than trained from scratch; training a MaskedMimic-scale tracker from scratch on AMASS takes multi-day, multi-GPU compute, which was outside the scope of this project. We then ran two phases:
+\begin{itemize}
+  \item \textbf{Phase 1 (0--1M steps), fixed masking.} $\ppc$ is distilled from $\pfc$ with DAgger under a fixed masking ratio $\rho = 0.5$. This is the warm-up shared by all methods.
+  \item \textbf{Phase 2 (1M--2M steps), scheduled masking.} $\ppc$ continues training while the masking ratio is set by the schedule under test: random, cosine, or the learned policy $\pth$ (trained jointly with PPO).
+\end{itemize}
+End-to-end wall-clock time was approximately 9.5~hours on the single A100, with the PPO scheduler adding roughly $1.5\times$ overhead to Phase~2 relative to a fixed schedule.
+
+\paragraph{Evaluation}
+We evaluate every 10{,}000 steps and track: mean squared error (MSE) of joint reconstruction; imitation accuracy (frame-wise classification of imitation correctness); mask entropy (entropy of the sampled binary masks); joint-velocity smoothness (temporal smoothness of joint trajectories); and mask-ratio convergence rate (the number of training steps for $\rho$ to reach 95\% of its final mean). Final comparisons additionally report L1 loss, MPJPE, FID on motion features, action-classification accuracy, and foot-slip error (Table~\ref{tab:metrics}).
+
+\paragraph{Baselines}
+We compare the learned schedule against:
+\begin{itemize}
+  \item \textbf{Random masking:} $\rho_t \sim \mathcal{U}(0.2, 0.8)$ at each step.
+  \item \textbf{Cosine masking:} $\rho_t$ decays along a cosine from 0.5 to 0.2 over Phase~2.
+\end{itemize}
+Cosine masking is the stronger of the two and is the reference for all relative improvements reported below. The ablation in Section~\ref{sec:ablation} additionally includes a fixed schedule ($\rho = 0.4$) and versions of $\pth$ with individual inputs removed.
+
+\paragraph{Generalization tests}
+We evaluate on (i)~cartwheel motions held out of the AMASS training split and tested on flat terrain, and (ii)~text prompts sampled from HumanML3D that do not appear in training. We also report a steering task on the H1 humanoid embodiment as an additional qualitative check.
+
+\paragraph{Reproducibility}
+Configuration files and hyperparameters are in \texttt{experiments/maskedmimic.yaml} in our fork of ProtoMotions; training seeds and environment setups are logged. Appendix~\ref{app:impl} gives the command-line steps.
+
+% ===========================================================================
+\section{Results}
+% ===========================================================================
+
+\subsection{Quantitative Evaluation}
+
+We evaluate Adaptive Mask Learning (AML) against the random and cosine schedules on the metrics in Table~\ref{tab:metrics}. All models are trained on AMASS in IsaacGym with identical physics-based humanoid controllers, differing only in the Phase~2 masking schedule.
+
+\begin{table}[h]
+  \centering
+  \small
+  \caption{Evaluation metrics.}
+  \label{tab:metrics}
+  \begin{tabular}{ll}
+    \toprule
+    Metric & Description \\
+    \midrule
+    L1 loss $\downarrow$ & Mean absolute error in joint positions \\
+    MPJPE $\downarrow$ & Mean per-joint position error (mm) \\
+    FID $\downarrow$ & Fr\'echet Inception Distance on motion features \\
+    Action accuracy $\uparrow$ & Classification accuracy from a motion classifier \\
+    Slip error $\downarrow$ & Foot--ground contact violation rate (\%) \\
+    Robustness $\uparrow$ & Fraction of full-input performance retained at $\rho \ge 0.8$ \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\paragraph{Main results}
+Table~\ref{tab:main} reports the comparison on AMASS. Relative to cosine masking, AML achieves:
+\begin{itemize}
+  \item 31\% lower MPJPE (42.7 $\rightarrow$ 29.6~mm; 37\% lower than random masking),
+  \item 46\% lower FID (23.1 $\rightarrow$ 12.4),
+  \item $+11.6$ points of action-classification accuracy (80.5\% $\rightarrow$ 92.1\%),
+  \item roughly $3\times$ lower foot-slip error (10.3\% $\rightarrow$ 3.2\%), and
+  \item the highest retained performance when 80--90\% of the input is masked.
+\end{itemize}
+Figure~\ref{fig:metrics} visualizes the same comparison.
+
+\begin{table}[h]
+  \centering
+  \small
+  \caption{Comparison of masking strategies on AMASS. MPJPE in mm; accuracy and slip error in \%. Robustness is the qualitative tier of performance retained at $\rho \ge 0.8$.}
+  \label{tab:main}
+  \begin{tabular}{lcccccc}
+    \toprule
+    Method & L1 loss $\downarrow$ & MPJPE $\downarrow$ & FID $\downarrow$ & Accuracy $\uparrow$ & Slip err.\ $\downarrow$ & Robustness $\uparrow$ \\
+    \midrule
+    Random masking   & 0.36 & 47.2 & 29.5 & 76.4 & 12.8 & Low \\
+    Cosine masking   & 0.31 & 42.7 & 23.1 & 80.5 & 10.3 & Moderate \\
+    Adaptive masking (ours) & \textbf{0.10} & \textbf{29.6} & \textbf{12.4} & \textbf{92.1} & \textbf{3.2} & High \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\begin{figure}[htbp]
+  \centering
+  \figimg{fig_metrics_comparison.png}{0.85\linewidth}
+  \caption{Quantitative comparison of masking strategies on AMASS (values from Table~\ref{tab:main}).}
+  \label{fig:metrics}
+\end{figure}
+
+\subsection{Mask-Ratio Scheduling Behavior}
+
+Figure~\ref{fig:schedule} shows the evolution of the learned masking ratio over training. Unlike a fixed schedule, AML starts at a low ratio ($\rho \approx 0.2$) and raises it as training progresses, stabilizing around $\rho \approx 0.68$. This is an implicit easy-to-hard curriculum: simple, densely conditioned inputs early on, and more heavily corrupted inputs once the model can handle them. The ratio reaches 95\% of its final mean at roughly 1.5M steps. Figure~\ref{fig:valloss} shows that validation loss under the adaptive schedule falls faster and to a lower value than under the baselines.
+
+\begin{figure}[htbp]
+  \centering
+  \figimg{fig_mask_ratio_schedule.png}{0.75\linewidth}
+  \caption{The learned masking ratio $\rho$ over training. AML learns a curriculum-like schedule that rises from about 0.2 and converges near 0.68.}
+  \label{fig:schedule}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \figimg{fig_val_loss.png}{0.75\linewidth}
+  \caption{Validation loss versus training steps for the adaptive schedule and the baselines.}
+  \label{fig:valloss}
+\end{figure}
+
+\subsection{Ablation Study}
+\label{sec:ablation}
+
+Table~\ref{tab:ablation} removes each scheduler input in turn and also compares against a fixed masking ratio. Removing the validation-loss delta produces the largest degradation (MPJPE 29.6 $\rightarrow$ 33.1~mm), identifying it as the dominant input; removing mask entropy has a smaller effect. Every learned variant outperforms the fixed $\rho = 0.4$ schedule, and the inputs contribute additively to stability.
+
+\begin{table}[h]
+  \centering
+  \small
+  \caption{Ablation over scheduler inputs and a fixed schedule (AMASS).}
+  \label{tab:ablation}
+  \begin{tabular}{lccc}
+    \toprule
+    Configuration & MPJPE $\downarrow$ & FID $\downarrow$ & Accuracy $\uparrow$ \\
+    \midrule
+    Full AML                  & \textbf{29.6} & \textbf{12.4} & \textbf{92.1} \\
+    w/o $\Delta$loss input    & 33.1 & 15.2 & 88.7 \\
+    w/o entropy input         & 31.5 & 14.1 & 89.6 \\
+    Fixed $\rho = 0.4$        & 38.4 & 19.7 & 84.2 \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\subsection{Generalization and Robustness}
+
+We evaluate the trained $\ppc$ on inputs and conditions not seen during training. Figure~\ref{fig:qualitative} shows representative frames from the two verified use cases, full-body tracking and text-to-motion, for the MaskedMimic baseline and for AML.
+
+\paragraph{Held-out cartwheel}
+On cartwheel sequences excluded from training, the fixed-$\rho$ Phase~1 checkpoint produces only a partial cartwheel (MSE $\approx$ 0.18, smoothness $\approx$ 0.03, MPJPE 45~mm). After adaptive training the same evaluation yields a full cartwheel (MSE $\approx$ 0.105, smoothness $\approx$ 0.02, MPJPE 39~mm), a 13\% reduction in MPJPE on a motion the model never saw.
+
+\paragraph{Unseen text prompts}
+On HumanML3D prompts not used in training (e.g.\ ``jump twice''), motions generated from text-only conditioning remain semantically consistent with the command and physically stable, whereas the cosine-schedule model more often produces truncated or unstable motion.
+
+\paragraph{High-sparsity inputs}
+When 80--90\% of the conditioning is masked ($\rho \ge 0.8$), AML retains more than 85\% of its full-input performance on the tracked metrics, while the cosine-schedule model degrades by 20--30\%. We observed the same qualitative gap under VR-style conditioning (upper-body joints only) and on SAMP object scenes, though we report these two settings only qualitatively.
+
+\paragraph{H1 steering}
+As an additional check on a different embodiment, we ran a steering task on the H1 humanoid supported by ProtoMotions (Figure~\ref{fig:h1}). The adaptive schedule trained without modification and the resulting controller tracked steering targets.
+
+\begin{figure}[htbp]
+  \centering
+  \figimg{fig_qualitative_tracking_text2motion.png}{0.9\linewidth}
+  \caption{Qualitative comparison of motion inpainting under the MaskedMimic baseline and Adaptive Mask Learning, for full-body tracking (top) and text-to-motion (bottom).}
+  \label{fig:qualitative}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \figimg{fig_h1_steering.png}{0.8\linewidth}
+  \caption{Results from the H1 steering experiment.}
+  \label{fig:h1}
+\end{figure}
+
+% ===========================================================================
+\section{Discussion}
+% ===========================================================================
+
+Treating input masking as a learnable policy rather than a fixed hyperparameter improves transformer-based motion inpainting. By adjusting $\rho$ in response to real-time training signals, Adaptive Mask Learning introduces a curriculum-style regime that improves learning dynamics and generalization.
+
+\paragraph{Key insights}
+\begin{itemize}
+  \item \textbf{Masking is a learnable scheduling mechanism.} The masking ratio can be treated as a trainable policy that governs input sparsity in line with the model's current learning state.
+  \item \textbf{Adaptive masking improves robustness and learning speed.} Dynamic adjustment of $\rho$ leads to faster convergence and better stability, especially at high sparsity ($\rho \ge 0.8$).
+  \item \textbf{The validation-loss delta is the signal that matters most.} The ablation shows that removing it costs more than removing any other input, which suggests that simpler schedulers driven by loss trends alone may capture much of the benefit.
+\end{itemize}
+
+\paragraph{Limitations}
+\begin{itemize}
+  \item \textbf{Compute overhead.} The PPO scheduler adds roughly $1.5\times$ wall-clock time to the scheduled phase relative to a static schedule.
+  \item \textbf{Reward sensitivity.} The policy depends on meaningful validation feedback; reward shaping for task-agnostic generalization is difficult under noisy supervision.
+  \item \textbf{Scalar masking.} The scheduler controls only the masking ratio, not which joints, frames, or modalities are masked. MaskedMimic's structured masking is richer, and learning over that structure is the natural next step.
+  \item \textbf{Limited signal in sparse regimes.} In text- or object-only conditioning, where per-step feedback is weak, the policy may need auxiliary objectives or richer evaluation metrics.
+  \item \textbf{Scope.} Results are from a single training seed per configuration at course-project scale; the SAMP and VR-style settings are reported qualitatively only.
+\end{itemize}
+
+% ===========================================================================
+\section{Conclusion}
+\label{sec:conclusion}
+% ===========================================================================
+
+We introduced Adaptive Mask Learning, a meta-RL scheduling mechanism that adjusts the masking ratio $\rho$ during training. Integrated into MaskedMimic, the policy learns to align input sparsity with model progress, producing a self-regulating curriculum that improves convergence, robustness under high sparsity, and generalization to unseen motions and text prompts.
+
+\paragraph{Future directions}
+\begin{itemize}
+  \item \textbf{Structured masking policies:} extend $\pth$ from a scalar ratio to per-joint, per-frame, or per-modality masks, matching MaskedMimic's native masking space.
+  \item \textbf{Differentiable schedulers:} replace PPO with relaxations that admit gradient-based training (e.g.\ Gumbel-softmax masks or bilevel optimization) to reduce overhead.
+  \item \textbf{Mask--attention integration:} learn masking jointly with transformer attention, enabling self-supervised mask scheduling without a separate policy network.
+  \item \textbf{Plug-and-play scheduling:} apply the scheduler to other inpainting-style controllers such as PACER+ or multimodal policies.
+  \item \textbf{Modality expansion:} apply adaptive masking to under-explored inputs such as IMU or LiDAR streams and mixed sensor--language conditioning.
+  \item \textbf{Cross-domain applications:} extend the paradigm beyond motion to video inpainting, trajectory forecasting, and other spatially structured data.
+\end{itemize}
+
+% ===========================================================================
+\section{Team Contributions}
+% ===========================================================================
+
+\textbf{Prasuna Chatla} (solo project):
+\begin{itemize}
+  \item Designed the adaptive masking policy and reward.
+  \item Implemented the PPO training loop in PyTorch and integrated it with MaskedMimic / ProtoMotions.
+  \item Reproduced the MaskedMimic baseline.
+  \item Ran all experiments and produced the plots.
+  \item Authored the poster and report.
+\end{itemize}
+
+\noindent\textbf{Changes from proposal:} none.
+
+\bibliographystyle{unsrtnat}
+\bibliography{references}
+
+% ===========================================================================
+\appendix
+\section{Implementation Details and Reproduction}
+\label{app:impl}
+% ===========================================================================
+
+\paragraph{Architecture}
+The implementation extends the ProtoMotions codebase~\cite{protomotions} with the adaptive masking policy. The fully constrained controller $\pfc$ is a transformer-based PPO policy (6 layers, 8 attention heads) initialized from the pretrained ProtoMotions full-body tracker. The partially constrained controller $\ppc$ is distilled with DAgger using a transformer inpainting model that consumes 120 past steps and predicts 2 future frames. The masking policy $\pth$ is a two-layer MLP with 128 hidden units, trained with PPO (learning rate $10^{-4}$, discount $\gamma = 0.99$), and outputs $\rho \in [0.1, 0.9]$ from the $\Delta$ validation loss, mask entropy, and gradient norm. The reward is Eq.~\ref{eq:reward} with $\alpha = 1.0$ and $\beta = 0.5$ on imitation accuracy. The scheduler is integrated into \texttt{train\_agent.py}; checkpoints are saved every 10{,}000 steps and logged metrics include MSE, accuracy, $\rho$, and motion smoothness. The change spans approximately 400 lines across the modified files. Figure~\ref{fig:impl} shows the mask-generation code path.
+
+\begin{figure}[h]
+  \centering
+  \figimg{fig_mask_generation_impl.png}{0.85\linewidth}
+  \caption{Mask-generation implementation.}
+  \label{fig:impl}
+\end{figure}
+
+\paragraph{Setup}
+\begin{verbatim}
+git clone https://github.com/NVlabs/ProtoMotions
+cd ProtoMotions
+pip install -e .
+pip install -r requirements_isaacgym.txt
+git lfs fetch --all        # pretrained checkpoints
+\end{verbatim}
+Set the AMASS dataset path in \texttt{config/base.yaml}. IsaacGym is configured for 128 parallel environments on a single NVIDIA A100.
+
+\paragraph{Data preparation}
+Load AMASS, preprocess into 120-step sequences with 2 future frames, and split 80\%/10\%/10\% into train/validation/test.
+
+\paragraph{Training}
+\begin{verbatim}
+python train_agent.py +exp=maskedmimic
+\end{verbatim}
+Train for 2{,}000{,}000 steps: Phase~1 (0--1M steps) distills $\ppc$ with fixed $\rho = 0.5$; Phase~2 (1M--2M steps) trains $\ppc$ and $\pth$ jointly with adaptive masking.
+
+\paragraph{Evaluation}
+\begin{verbatim}
+python eval_agent.py +checkpoint=checkpoint_2000000.pt
+\end{verbatim}
+Computes MSE, imitation accuracy, mask entropy, joint-velocity smoothness, and mask-ratio convergence rate. Generalization on unseen cartwheel sequences is recorded with \texttt{record\_video=true}.
+
+\paragraph{Reference numbers}
+Values a successful run should reproduce (single seed):
+\begin{itemize}
+  \item $\rho$ converges to $\approx 0.68$ by about 1.8M steps; convergence rate (95\% of final mean) $\approx$ 1.5M steps.
+  \item Mask entropy stabilizes near 0.8; joint-velocity smoothness $\approx$ 0.02.
+  \item Cartwheel hold-out: MSE $\approx$ 0.18 $\rightarrow$ 0.105 and MPJPE 45 $\rightarrow$ 39~mm from the Phase~1 checkpoint to the adaptively trained model.
+  \item Ablation without $\pth$: MSE $\approx$ 0.14 and smoothness $\approx$ 0.04, about 25\% higher error than the full system.
+\end{itemize}
+
+\end{document}

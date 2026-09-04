@@ -1,0 +1,225 @@
+\begin{thebibliography}{30}
+\providecommand{\natexlab}[1]{#1}
+\providecommand{\url}[1]{\texttt{#1}}
+\expandafter\ifx\csname urlstyle\endcsname\relax
+  \providecommand{\doi}[1]{doi: #1}\else
+  \providecommand{\doi}{doi: \begingroup \urlstyle{rm}\Url}\fi
+
+\bibitem[Tessler et~al.(2024)Tessler, Guo, Nabati, Chechik, and
+  Peng]{tessler2024maskedmimic}
+Chen Tessler, Yunrong Guo, Ofir Nabati, Gal Chechik, and Xue~Bin Peng.
+\newblock {MaskedMimic}: Unified physics-based character control through masked
+  motion inpainting.
+\newblock \emph{ACM Transactions on Graphics (Proc. SIGGRAPH Asia)},
+  43\penalty0 (6), 2024.
+
+\bibitem[Schulman et~al.(2017)Schulman, Wolski, Dhariwal, Radford, and
+  Klimov]{schulman2017ppo}
+John Schulman, Filip Wolski, Prafulla Dhariwal, Alec Radford, and Oleg Klimov.
+\newblock Proximal policy optimization algorithms.
+\newblock \emph{arXiv preprint arXiv:1707.06347}, 2017.
+
+\bibitem[Mahmood et~al.(2019)Mahmood, Ghorbani, Troje, Pons-Moll, and
+  Black]{mahmood2019amass}
+Naureen Mahmood, Nima Ghorbani, Nikolaus~F. Troje, Gerard Pons-Moll, and
+  Michael~J. Black.
+\newblock {AMASS}: Archive of motion capture as surface shapes.
+\newblock In \emph{Proceedings of the IEEE/CVF International Conference on
+  Computer Vision (ICCV)}, 2019.
+
+\bibitem[Ross et~al.(2011)Ross, Gordon, and Bagnell]{ross2011dagger}
+St{\'e}phane Ross, Geoffrey~J. Gordon, and J.~Andrew Bagnell.
+\newblock A reduction of imitation learning and structured prediction to
+  no-regret online learning.
+\newblock In \emph{Proceedings of the Fourteenth International Conference on
+  Artificial Intelligence and Statistics (AISTATS)}, 2011.
+
+\bibitem[Makoviychuk et~al.(2021)Makoviychuk, Wawrzyniak, Guo, Lu, Storey,
+  Macklin, Hoeller, Rudin, Allshire, Handa, and State]{makoviychuk2021isaacgym}
+Viktor Makoviychuk, Lukasz Wawrzyniak, Yunrong Guo, Michelle Lu, Kier Storey,
+  Miles Macklin, David Hoeller, Nikita Rudin, Arthur Allshire, Ankur Handa, and
+  Gavriel State.
+\newblock Isaac gym: High performance {GPU}-based physics simulation for robot
+  learning.
+\newblock In \emph{NeurIPS Datasets and Benchmarks Track}, 2021.
+
+\bibitem[Guo et~al.(2022)Guo, Zou, Zuo, Wang, Ji, Li, and
+  Cheng]{guo2022humanml3d}
+Chuan Guo, Shihao Zou, Xinxin Zuo, Sen Wang, Wei Ji, Xingyu Li, and Li~Cheng.
+\newblock Generating diverse and natural {3D} human motions from text.
+\newblock In \emph{Proceedings of the IEEE/CVF Conference on Computer Vision
+  and Pattern Recognition (CVPR)}, 2022.
+
+\bibitem[Winkler et~al.(2022)Winkler, Won, and Ye]{winkler2022questsim}
+Alexander Winkler, Jungdam Won, and Yuting Ye.
+\newblock {QuestSim}: Human motion tracking from sparse sensors with simulated
+  avatars.
+\newblock In \emph{SIGGRAPH Asia 2022 Conference Papers}, 2022.
+
+\bibitem[Rempe et~al.(2023)Rempe, Luo, Peng, Yuan, Kitani, Kreis, Fidler, and
+  Litany]{rempe2023trace}
+Davis Rempe, Zhengyi Luo, Xue~Bin Peng, Ye~Yuan, Kris Kitani, Karsten Kreis,
+  Sanja Fidler, and Or~Litany.
+\newblock Trace and pace: Controllable pedestrian animation via guided
+  trajectory diffusion.
+\newblock In \emph{Proceedings of the IEEE/CVF Conference on Computer Vision
+  and Pattern Recognition (CVPR)}, 2023.
+
+\bibitem[Hassan et~al.(2023)Hassan, Guo, Wang, Black, Fidler, and
+  Peng]{hassan2023interphys}
+Mohamed Hassan, Yunrong Guo, Tingwu Wang, Michael~J. Black, Sanja Fidler, and
+  Xue~Bin Peng.
+\newblock Synthesizing physical character-scene interactions.
+\newblock In \emph{ACM SIGGRAPH 2023 Conference Proceedings}, 2023.
+
+\bibitem[Juravsky et~al.(2022)Juravsky, Guo, Fidler, and
+  Peng]{juravsky2022padl}
+Jordan Juravsky, Yunrong Guo, Sanja Fidler, and Xue~Bin Peng.
+\newblock {PADL}: Language-directed physics-based character control.
+\newblock In \emph{SIGGRAPH Asia 2022 Conference Papers}, 2022.
+
+\bibitem[Peng et~al.(2022)Peng, Guo, Halper, Levine, and Fidler]{peng2022ase}
+Xue~Bin Peng, Yunrong Guo, Lina Halper, Sergey Levine, and Sanja Fidler.
+\newblock {ASE}: Large-scale reusable adversarial skill embeddings for
+  physically simulated characters.
+\newblock \emph{ACM Transactions on Graphics (Proc. SIGGRAPH)}, 41\penalty0
+  (4), 2022.
+
+\bibitem[Luo et~al.(2024)Luo, Cao, Merel, Winkler, Huang, Kitani, and
+  Xu]{luo2024pulse}
+Zhengyi Luo, Jinkun Cao, Josh Merel, Alexander Winkler, Jing Huang, Kris
+  Kitani, and Weipeng Xu.
+\newblock Universal humanoid motion representations for physics-based control.
+\newblock In \emph{International Conference on Learning Representations
+  (ICLR)}, 2024.
+
+\bibitem[Bengio et~al.(2009)Bengio, Louradour, Collobert, and
+  Weston]{bengio2009curriculum}
+Yoshua Bengio, J{\'e}r{\^o}me Louradour, Ronan Collobert, and Jason Weston.
+\newblock Curriculum learning.
+\newblock In \emph{Proceedings of the 26th International Conference on Machine
+  Learning (ICML)}, 2009.
+
+\bibitem[de~Lasa et~al.(2010)de~Lasa, Mordatch, and
+  Hertzmann]{delasa2010feature}
+Martin de~Lasa, Igor Mordatch, and Aaron Hertzmann.
+\newblock Feature-based locomotion controllers.
+\newblock \emph{ACM Transactions on Graphics (Proc. SIGGRAPH)}, 29\penalty0
+  (4), 2010.
+
+\bibitem[Geijtenbeek et~al.(2013)Geijtenbeek, van~de Panne, and van~der
+  Stappen]{geijtenbeek2013flexible}
+Thomas Geijtenbeek, Michiel van~de Panne, and A.~Frank van~der Stappen.
+\newblock Flexible muscle-based locomotion for bipedal creatures.
+\newblock \emph{ACM Transactions on Graphics (Proc. SIGGRAPH Asia)},
+  32\penalty0 (6), 2013.
+
+\bibitem[Lee et~al.(2002)Lee, Chai, Reitsma, Hodgins, and
+  Pollard]{lee2002interactive}
+Jehee Lee, Jinxiang Chai, Paul S.~A. Reitsma, Jessica~K. Hodgins, and Nancy~S.
+  Pollard.
+\newblock Interactive control of avatars animated with human motion data.
+\newblock \emph{ACM Transactions on Graphics (Proc. SIGGRAPH)}, 21\penalty0
+  (3), 2002.
+
+\bibitem[Liu et~al.(2010)Liu, Yin, van~de Panne, Shao, and Xu]{liu2010sampling}
+Libin Liu, KangKang Yin, Michiel van~de Panne, Tianjia Shao, and Weiwei Xu.
+\newblock Sampling-based contact-rich motion control.
+\newblock \emph{ACM Transactions on Graphics (Proc. SIGGRAPH)}, 29\penalty0
+  (4), 2010.
+
+\bibitem[Wang et~al.(2021)Wang, Xu, Xu, Liu, and Wang]{wang2021synthesizing}
+Jiashun Wang, Huazhe Xu, Jingwei Xu, Sifei Liu, and Xiaolong Wang.
+\newblock Synthesizing long-term {3D} human motion and interaction in {3D}
+  scenes.
+\newblock In \emph{Proceedings of the IEEE/CVF Conference on Computer Vision
+  and Pattern Recognition (CVPR)}, 2021.
+
+\bibitem[Xu et~al.(2023)Xu, Li, Wang, and Gui]{xu2023interdiff}
+Sirui Xu, Zhengyuan Li, Yu-Xiong Wang, and Liang-Yan Gui.
+\newblock {InterDiff}: Generating {3D} human-object interactions with
+  physics-informed diffusion.
+\newblock In \emph{Proceedings of the IEEE/CVF International Conference on
+  Computer Vision (ICCV)}, 2023.
+
+\bibitem[Wang et~al.(2023)Wang, Lin, Zeng, Luo, Zhang, and
+  Zhang]{wang2023physhoi}
+Yinhuai Wang, Jing Lin, Ailing Zeng, Zhengyi Luo, Jian Zhang, and Lei Zhang.
+\newblock {PhysHOI}: Physics-based imitation of dynamic human-object
+  interaction.
+\newblock \emph{arXiv preprint arXiv:2312.04393}, 2023.
+
+\bibitem[Xiao et~al.(2024)Xiao, Wang, Wang, Cao, Zhang, Dai, Lin, and
+  Pang]{xiao2024unihsi}
+Zeqi Xiao, Tai Wang, Jingbo Wang, Jinkun Cao, Wenwei Zhang, Bo~Dai, Dahua Lin,
+  and Jiangmiao Pang.
+\newblock Unified human-scene interaction via prompted chain-of-contacts.
+\newblock In \emph{International Conference on Learning Representations
+  (ICLR)}, 2024.
+
+\bibitem[Punnakkal et~al.(2021)Punnakkal, Chandrasekaran, Athanasiou,
+  Quiros-Ramirez, and Black]{punnakkal2021babel}
+Abhinanda~R. Punnakkal, Arjun Chandrasekaran, Nikos Athanasiou, Alejandra
+  Quiros-Ramirez, and Michael~J. Black.
+\newblock {BABEL}: Bodies, action and behavior with english labels.
+\newblock In \emph{Proceedings of the IEEE/CVF Conference on Computer Vision
+  and Pattern Recognition (CVPR)}, 2021.
+
+\bibitem[Petrovich et~al.(2021)Petrovich, Black, and Varol]{petrovich2021actor}
+Mathis Petrovich, Michael~J. Black, and G{\"u}l Varol.
+\newblock Action-conditioned {3D} human motion synthesis with transformer
+  {VAE}.
+\newblock In \emph{Proceedings of the IEEE/CVF International Conference on
+  Computer Vision (ICCV)}, 2021.
+
+\bibitem[Tevet et~al.(2023)Tevet, Raab, Gordon, Shafir, Cohen-Or, and
+  Bermano]{tevet2023mdm}
+Guy Tevet, Sigal Raab, Brian Gordon, Yonatan Shafir, Daniel Cohen-Or, and
+  Amit~H. Bermano.
+\newblock Human motion diffusion model.
+\newblock In \emph{International Conference on Learning Representations
+  (ICLR)}, 2023.
+
+\bibitem[Wang et~al.(2024)Wang, Luo, Yuan, Li, and Dai]{wang2024pacerplus}
+Jingbo Wang, Zhengyi Luo, Ye~Yuan, Yixuan Li, and Bo~Dai.
+\newblock {PACER+}: On-demand pedestrian animation controller in driving
+  scenarios.
+\newblock In \emph{Proceedings of the IEEE/CVF Conference on Computer Vision
+  and Pattern Recognition (CVPR)}, 2024.
+
+\bibitem[Tessler et~al.(2023)Tessler, Kasten, Guo, Mannor, Chechik, and
+  Peng]{tessler2023calm}
+Chen Tessler, Yoni Kasten, Yunrong Guo, Shie Mannor, Gal Chechik, and Xue~Bin
+  Peng.
+\newblock {CALM}: Conditional adversarial latent models for directable virtual
+  characters.
+\newblock In \emph{ACM SIGGRAPH 2023 Conference Proceedings}, 2023.
+
+\bibitem[Dou et~al.(2023)Dou, Chen, Fan, Komura, and Wang]{dou2023case}
+Zhiyang Dou, Xuelin Chen, Qingnan Fan, Taku Komura, and Wenping Wang.
+\newblock C{$\cdot$}ase: Learning conditional adversarial skill embeddings for
+  physics-based characters.
+\newblock In \emph{SIGGRAPH Asia 2023 Conference Papers}, 2023.
+
+\bibitem[{NVIDIA}(2024)]{protomotions}
+{NVIDIA}.
+\newblock {ProtoMotions}: Physics-based character animation.
+\newblock \url{https://github.com/NVlabs/ProtoMotions}, 2024.
+
+\bibitem[Hassan et~al.(2021)Hassan, Ceylan, Villegas, Saito, Yang, Zhou, and
+  Black]{hassan2021samp}
+Mohamed Hassan, Duygu Ceylan, Ruben Villegas, Jun Saito, Jimei Yang, Yi~Zhou,
+  and Michael~J. Black.
+\newblock Stochastic scene-aware motion prediction.
+\newblock In \emph{Proceedings of the IEEE/CVF International Conference on
+  Computer Vision (ICCV)}, 2021.
+
+\bibitem[Loper et~al.(2015)Loper, Mahmood, Romero, Pons-Moll, and
+  Black]{loper2015smpl}
+Matthew Loper, Naureen Mahmood, Javier Romero, Gerard Pons-Moll, and Michael~J.
+  Black.
+\newblock {SMPL}: A skinned multi-person linear model.
+\newblock \emph{ACM Transactions on Graphics (Proc. SIGGRAPH Asia)},
+  34\penalty0 (6), 2015.
+
+\end{thebibliography}
