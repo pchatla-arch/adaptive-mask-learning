@@ -1,6 +1,7 @@
 # Adaptive Mask Learning for MaskedMimic via Meta-RL
 
-**Stanford CS224R (Deep Reinforcement Learning), Spring 2025 — project**
+**Stanford CS224R (Deep Reinforcement Learning), Spring 2025**
+
 Prasuna Chatla
 pchatla@stanford.edu
 
