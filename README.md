@@ -5,8 +5,6 @@
 Prasuna Chatla
 pchatla@stanford.edu
 
-(report/main.pdf)
-
 ## Summary
 
 [MaskedMimic](https://research.nvidia.com/labs/par/maskedmimic/) trains a physics-based character controller by inpainting full-body motion from partially masked conditioning (joints, keyframes, text, objects). The masking schedule it uses during training is fixed in advance or sampled at random, and never responds to how the model is doing.
